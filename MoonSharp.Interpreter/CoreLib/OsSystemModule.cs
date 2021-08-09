@@ -128,5 +128,54 @@ namespace MoonSharp.Interpreter.CoreLib
 		{
 			return DynValue.NewString(Script.GlobalOptions.Platform.IO_OS_GetTempFilename());
 		}
+
+		public SoundPlayer[] SoundPlayers = new SoundPlayer[25];
+
+		[MoonSharpModuleMethod]
+		public DynValue SoundCommand(int playerIndex, string action, string filepath)
+		{
+			if (playerIndex > 24 || playerIndex < 0) {
+				throw new InvalidOperationException("Invalid sound player index");
+			}
+			if (action == "stop") {
+				if (SoundPlayers[playerIndex] == null) {
+					return DynValue.NewBoolean(false);
+				}
+				SoundPlayers[playerIndex].Stop();
+				return DynValue.NewBoolean(true);
+			} else if (action == "play") {
+				if (SoundPlayers[playerIndex] == null) {
+					SoundPlayers[playerIndex] = new SoundPlayer(filepath);
+					SoundPlayers[playerIndex].Play();
+					return DynValue.NewBoolean(true);
+				}
+				if (filepath != null) {
+					if (!filepath.EndsWith(".wav")) {
+						throw new InvalidOperationException("Invalid filename (file must be a uncompressed PCM wav file)");
+					}
+					SoundPlayers[playerIndex].SoundLocation = filepath;
+				}
+				SoundPlayers[playerIndex].Play();
+				return DynValue.NewBoolean(true);
+			} else if (action == "load") {
+				if (filepath == null) {
+					throw new InvalidOperationException("Invalid filename (filename required for load!)");
+				}
+				if (!filepath.EndsWith(".wav")) {
+					throw new InvalidOperationException("Invalid filename (file must be a uncompressed PCM wav file)");
+				}
+				if (SoundPlayers[playerIndex] == null) {
+					SoundPlayers[playerIndex] = new SoundPlayer(filepath);
+					SoundPlayers[playerIndex].LoadAsync();
+					return DynValue.NewBoolean(true);
+				}
+				SoundPlayers[playerIndex].SoundLocation = filepath;
+				SoundPlayers[playerIndex].LoadAsync();
+				return DynValue.NewBoolean(true);
+			} else {
+				throw new InvalidOperationException("Invalid sound player action (valid actions are: \"stop\", \"play\", and \"load\")");
+			}
+			return DynValue.NewBoolean(false);
+		}
 	}
 }
